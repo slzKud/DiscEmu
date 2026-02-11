@@ -1,0 +1,5 @@
+isos/*
+*.o
+disc-emu
+disc-emu.exe
+config.json
