@@ -1,5 +1,5 @@
 # DiscEmu
-CD-ROM Emulator Device Software based on [driver1998's](github.com/driver1998/DiscEmu).This project has undergone a certain amount of refactoring and code modification compared to the original project.
+CD-ROM Emulator Device Software based on [driver1998's](https://github.com/driver1998/DiscEmu).This project has undergone a certain amount of refactoring and code modification compared to the original project.
 
 Currently under continuous development.
 
