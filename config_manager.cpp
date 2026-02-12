@@ -3,7 +3,12 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-
+#ifndef DEFAULT_LANG
+#define DEFAULT_LANG "en"
+#endif
+#ifndef SCREEN_ROTATE
+#define SCREEN_ROTATE 0
+#endif
 ConfigManager::ConfigManager(const std::string& configFile) 
     : configFilePath(configFile) {
     // 尝试加载配置，如果失败则使用默认配置
@@ -147,7 +152,7 @@ cJSON* ConfigManager::createJsonFromConfig(const AppConfig& config) {
 }
 
 bool ConfigManager::createDefaultConfig() {
-    AppConfig defaultConfig(0, false, false, false, "zh-cn");
+    AppConfig defaultConfig(SCREEN_ROTATE, false, false, false, DEFAULT_LANG);
     return saveConfig(defaultConfig);
 }
 
