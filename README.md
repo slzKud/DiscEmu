@@ -13,7 +13,7 @@ Currently under continuous development.
 
 ## TO-DO Lists
 * Use U8g2 to replace with libu8g2arm fully. (Currently, only the SDL simulator uses U8g2.)
-* Add practical simulation functionality to the source project.
+* ~~Add practical simulation functionality to the source project.~~
 * USB Floppy simulation.
 * Original DiscEmu with SPI OLED and Encoder Support.(Use Milk-V Duo)
 * Microcontroller support (e.g., CH32)
