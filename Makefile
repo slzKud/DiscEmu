@@ -23,6 +23,7 @@ ifeq ($(DEVICE_TYPE),sdl2)
     LDFLAGS += $(LIBSDL) $(LIBU8G2) $(LIBBOOST)
 else ifeq ($(DEVICE_TYPE),luckfox)
     CPP_SRC += input.cpp
+    CPP_SRC += usb/network.cpp usb/usb.cpp
     CXXFLAGS += --std=c++17 -I${BOOST_PREFIX}/include -I${U8G2_PREFIX}/include -DKEYPAD_INPUT -DI2C_DISPLAY -DLUCKFOX
     CFLAGS += -I${BOOST_PREFIX}/include -I${U8G2_PREFIX}/include
     LDFLAGS += -L${BOOST_PREFIX}/lib -L${U8G2_PREFIX}/lib --static

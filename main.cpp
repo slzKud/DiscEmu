@@ -24,7 +24,23 @@
 #include "i18ntools.h"
 #include "config_manager.h"
 #include "util.h"
+#ifdef USB_ON
+#include "usb/usb.h"
+#include "usb/network.h"
+#endif
 #include <boost/filesystem.hpp>
+
+typedef enum{
+  NO_EMU,
+  RNDIS,
+  MTP,
+  MSD,
+  MSC,
+  MSFD,
+} EMUStatus;
+
+EMUStatus emu_status=NO_EMU;
+int main_menu_flag=0;
 u8g2_t u8g2 = {};
 ConfigManager configManager("config.json");
 namespace fs = boost::filesystem;
@@ -46,6 +62,7 @@ int action_file_delete(std::any arg);
 int action_create_image_select(std::any arg);
 int action_shutdown(std::any arg);
 int action_reset(std::any arg);
+int action_main_menu(std::any arg);
 void display_fonts();
 
 std::vector<MenuItem> main_menu = {
@@ -64,6 +81,49 @@ std::vector<ImageSizesList> imageSizeList = {
   ImageSizesList{"1 GB",1024.0 * 1024.0 * 1024.0},
   ImageSizesList{"2 GB",2.0 * 1024.0 * 1024.0 * 1024.0},
 };
+#ifdef USB_ON
+void fake_loading_w_luckfox(){
+  u8g2_ClearBuffer(&u8g2);
+  u8g2_SetDrawColor(&u8g2, 1);
+  u8g2_DrawUTF8(&u8g2, 2, 28, _("Please Wait..."));
+  u8g2_SendBuffer(&u8g2);
+  system("reboot");
+  sleep(1);
+}
+#endif
+void reset_disc_emu() {
+  #ifdef USB_ON
+  if(emu_status==NO_EMU){
+    // 如果当前没有模拟,则暂时不模拟东西（避免额外的重启）,或者只模拟MSC(存在标志文件时)
+    if(fs::exists("/etc/normal_msc.flag")){
+      emu_status=MSC;
+      usb_gadget_add_cdrom();
+      usb_gadget_start();
+      return;
+    }
+  }
+  if(emu_status==RNDIS || emu_status==MTP){
+    // 如果当前模拟的是RNDIS和MTP，则reset等于直接重启
+    fake_loading_w_luckfox();
+    return;
+  }
+  if(emu_status==MSD || emu_status==MSFD){
+    // 如果当前模拟的是USB磁盘，也直接重启，因为清除file之后就是一个空磁盘，没有意义。
+    fake_loading_w_luckfox();
+    return;
+  }
+  if(emu_status==MSC){
+    // 如果当前模拟的是USB光驱，只清除file。
+    system("echo "" > /sys/kernel/config/usb_gadget/rockchip/functions/mass_storage.0/lun.0/file");
+    if(main_menu_flag==0){
+      action_main_menu(NULL);
+    }
+    return;
+  }
+  #else
+  return;
+  #endif
+}
 
 // 通用Prompt
 
@@ -115,6 +175,7 @@ int action_do_nothing(std::any arg) { return 0; }
 
 int action_main_menu(std::any arg) {
   Menu menu { .title = "DiscEmu" };
+  main_menu_flag=1;
   menu_init(&menu, &main_menu);
   menu_run(&menu, &u8g2);
   return 0;
@@ -527,11 +588,31 @@ int action_usb_rndis(std::any arg){
   show_message("",0); //开启输入
   */
   // 等待结束后创建菜单
+  #ifdef USB_ON
+  show_message("",2);
+  if(emu_status==MSC){
+    system("touch /etc/rndis.flag");
+    fake_loading_w_luckfox();
+    return 0;
+  }
+  message_draw_standalone(&u8g2,_f("Initializing..."));
+  emu_status=RNDIS;
+  usb_gadget_stop();
+  rndis_start();
+  show_message("",0);
+  #endif
   Menu rndis_menu { .title = "USB RNDIS" };
   std::vector<MenuItem> rndis_menu_items = {      
         MenuItem{.name = _f("IP: %s","172.32.0.70"), .action = action_do_nothing},      
         MenuItem{.name = "Exit",
-                .action = [](std::any) { return -1; }},
+                .action = [](std::any) { 
+                  #ifdef USB_ON
+                  rndis_stop();
+                  reset_disc_emu();
+                  usleep(500 * 1000);
+                  #endif
+                  return -1; 
+                }},
     };
   menu_init(&rndis_menu, &rndis_menu_items);
   return menu_run(&rndis_menu, &u8g2);
@@ -540,12 +621,44 @@ int action_disk_emu(std::any arg) {
   auto path = std::any_cast<fs::path>(arg);
   std::string ext = path.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  #ifdef USB_ON
+  usb_gadget_stop();
+  if (ext == ".iso") {
+    emu_status=MSC;
+    system(("echo \""+ path.string()+"\" > /etc/msc.flag").c_str());
+    system("sync");
+    usb_gadget_add_cdrom(path);
+  } else if (ext == ".img") {
+    if(emu_status==MSC){
+      system(("echo \""+ path.string()+"\" > /etc/msc.flag").c_str());
+      system("sync");
+      fake_loading_w_luckfox();
+    }
+    emu_status=MSD;
+    usb_gadget_add_msc(path);
+  } else if (ext == ".flp") {
+    if(emu_status==MSC){
+      system(("echo \""+ path.string()+"\" > /etc/msc.flag").c_str());
+      system("sync");
+      fake_loading_w_luckfox();
+    }
+    emu_status=MSFD;
+    usb_gadget_add_floppy(path);
+  }
+  usb_gadget_start();
+  #endif
   Menu emu_menu { .title = "Current image" };
   std::vector<MenuItem> emu_menu_items = {      
       MenuItem{.name = path.filename().c_str(), .action = action_do_nothing},
       MenuItem{.name = "Eject",
                .action =
                   [](std::any) {
+                    #ifdef USB_ON
+                    system("rm -rf /etc/msc.flag");
+                    system("sync");
+                    reset_disc_emu();
+                    usleep(500 * 1000);
+                    #endif
                     return -1;
                   }},
       MenuItem{.name = "", .action = action_do_nothing},
@@ -555,12 +668,35 @@ int action_disk_emu(std::any arg) {
   return 0;
 }
 int action_mtp(std::any arg) {
+  #ifdef USB_ON
+  if (!fs::exists("/usr/sbin/umtprd") || !fs::exists("/etc/umtprd/umtprd.conf")) {
+    action_errmsg(std::string("unable to open MTP."));
+    return 0;
+  }
+  if(emu_status==MSC){
+    system("touch /etc/mtp.flag");
+    fake_loading_w_luckfox();
+    return 0;
+  }
+  show_message("",2);
+  message_draw_standalone(&u8g2,_f("Initializing..."));
+  emu_status=MTP;
+  usb_gadget_stop();
+  usb_gadget_add_mtp();
+  usb_gadget_start();
+  show_message("",0);
+  #endif
   Menu mtp_menu { .title = "File Transfer" };
   std::vector<MenuItem> mtp_menu_items = {      
       MenuItem{.name = "Now you can transfer file via USB.", .action = action_do_nothing},      
       MenuItem{.name = "Exit",
                .action =
                    [](std::any) {
+                     #ifdef USB_ON
+                     usb_gadget_stop();
+                     reset_disc_emu();
+                     usleep(500 * 1000);
+                     #endif
                      return -1;
                    }},
   };
@@ -585,6 +721,31 @@ int action_reset(std::any arg){
   return 0;
 }
 void runonce(){
+  #ifdef USB_ON
+  if(fs::exists("/etc/rndis.flag")){
+    system("rm -rf /etc/rndis.flag");
+    action_usb_rndis(NULL);
+    return;
+  }
+  if(fs::exists("/etc/mtp.flag")){
+    system("rm -rf /etc/mtp.flag");
+    action_mtp(NULL);
+    return;
+  }
+  if(fs::exists("/etc/msc.flag")){
+    std::string k=readFileIntoString("/etc/msc.flag");
+    std::cout << "msc.flag exist,check:" << k << ",done."
+              << std::endl;
+    if(fs::exists(k)){
+      std::cout << "file exists."
+              << std::endl;
+      //system("rm -rf /etc/msc.flag");
+      action_disk_emu(fs::path(k));
+      return;
+    }
+  }
+  reset_disc_emu();
+  #endif
 	action_main_menu(NULL);
 	return;
 }
