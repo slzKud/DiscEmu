@@ -315,13 +315,36 @@ int action_screen_rotation(std::any arg){
     };
   return action_prompt(params);
 }
+int action_reset_config(std::any arg){
+  PromptParams params;
+  AppConfig& config = configManager.getConfig();
+  params.title = "Reset?";
+  params.options = {"Yes", "No"};
+  params.actions = {
+        [](int index, std::any arg) { 
+            fs::remove("./config.json");
+            #ifdef USB_ON
+            fake_loading_w_luckfox();
+            return -1;
+            #else
+            return action_reset(NULL);
+            #endif
+        },
+        [](int index, std::any arg) { 
+            return -1;
+        }
+    };
+  return action_prompt(params);
+}
+
 int action_genrnal_settings(std::any arg) {
   Menu status_menu { .title = "Genrnal" };
   std::vector<MenuItem> status_menu_items = { 
       MenuItem{.name = "Back"},   
       MenuItem{.name = _("Screen Rotation"),.action = action_screen_rotation},    
       MenuItem{.name = _("Read-only Settings"),.action = action_read_only_set},
-      MenuItem{.name = _("Floppy Mode"),.action = action_floppy_mode}
+      MenuItem{.name = _("Floppy Mode"),.action = action_floppy_mode},
+      MenuItem{.name = _("Reset"),.action = action_reset_config}
   };
   menu_init(&status_menu, &status_menu_items);
   menu_run(&status_menu, &u8g2);
