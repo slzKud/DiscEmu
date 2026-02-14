@@ -95,7 +95,7 @@ void reset_disc_emu() {
   #ifdef USB_ON
   if(emu_status==NO_EMU){
     // 如果当前没有模拟,则暂时不模拟东西（避免额外的重启）,或者只模拟MSC(存在标志文件时)
-    if(fs::exists("/etc/normal_msc.flag")){
+    if(configManager.getConfig().mscOnStart){
       emu_status=MSC;
       usb_gadget_add_cdrom();
       usb_gadget_start();
@@ -272,6 +272,46 @@ int action_floppy_mode(std::any arg){
     };
   return action_prompt(params);
 }
+
+int action_empty_cd(std::any arg){
+  PromptParams params;
+  AppConfig& config = configManager.getConfig();
+  params.title = "Startup Empty-CD";
+  params.options = {"On", "Off"};
+  params.need_back = 1;
+  params.active_index = (configManager.getConfig().mscOnStart)?0:1;
+  params.actions = {
+        [](int index,std::any arg) { 
+            std::cout << "Startup Empty-CD ON" << std::endl;
+            AppConfig& config = configManager.getConfig();
+            config.mscOnStart = true;
+            if(configManager.saveConfig(config)){
+              show_message("Config Saved.",1);
+            }else{
+              show_message("Config not effected.",1);
+            }
+            #ifdef I2C_DISPLAY
+            system("sync");
+            #endif
+            return -1;
+        },
+        [](int index, std::any arg) { 
+            std::cout << "Startup Empty-CD OFF" << std::endl;
+            AppConfig& config = configManager.getConfig();
+            config.mscOnStart = false;
+            if(configManager.saveConfig(config)){
+              show_message("Config Saved.",1);
+            }else{
+              show_message("Config not effected.",1);
+            }
+            #ifdef I2C_DISPLAY
+            system("sync");
+            #endif
+            return -1;
+        }
+    };
+  return action_prompt(params);
+}
 int action_screen_rotation(std::any arg){
   PromptParams params;
   AppConfig& config = configManager.getConfig();
@@ -351,7 +391,8 @@ int action_genrnal_settings(std::any arg) {
   Menu status_menu { .title = "Genrnal" };
   std::vector<MenuItem> status_menu_items = { 
       MenuItem{.name = "Back"},   
-      MenuItem{.name = _("Screen Rotation"),.action = action_screen_rotation},    
+      MenuItem{.name = _("Screen Rotation"),.action = action_screen_rotation},  
+      MenuItem{.name = _("Startup Empty-CD"),.action = action_empty_cd},  
       MenuItem{.name = _("Read-only Settings"),.action = action_read_only_set},
       MenuItem{.name = _("Floppy Mode"),.action = action_floppy_mode},
       MenuItem{.name = _("Reset"),.action = action_reset_config}
