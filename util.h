@@ -10,6 +10,8 @@ typedef struct {
 } DiskSpaceInfo;
 typedef struct {
     std::string friendlyName;
+    double usedperUnit;
+    std::string perUnit;
     double usedBytes;
 } ImageSizesList;
 bool getDiskSpace(const std::string& path,DiskSpaceInfo& disk_info);

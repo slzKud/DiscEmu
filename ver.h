@@ -1,5 +1,5 @@
 #ifndef __VER_H__
-#define DISCEMU_VER "0.2.2"
+#define DISCEMU_VER "0.2.3"
 #if defined(USB_ON)
     #if defined(DEADFATTY_KEYPAD_INPUT) && defined(SCREEN_ROTATE)
         #define DEVICE_TYPE "DiscEmu(deadfatty)"

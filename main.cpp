@@ -39,6 +39,13 @@ typedef enum{
   MSFD,
 } EMUStatus;
 
+typedef struct {
+    std::string path = "";
+    int imageIndex=0;
+    bool aborted = false;
+} ImageInfo;
+
+ImageInfo image_info;
 EMUStatus emu_status=NO_EMU;
 int main_menu_flag=0;
 u8g2_t u8g2 = {};
@@ -77,9 +84,11 @@ std::vector<MenuItem> main_menu = {
 };
 
 std::vector<ImageSizesList> imageSizeList = {
-  ImageSizesList{"512 MB",512.0 * 1024.0 * 1024.0},
-  ImageSizesList{"1 GB",1024.0 * 1024.0 * 1024.0},
-  ImageSizesList{"2 GB",2.0 * 1024.0 * 1024.0 * 1024.0},
+  ImageSizesList{"512 MB",512,"MB",512.0 * 1024.0 * 1024.0},
+  ImageSizesList{"1 GB",1,"GB",1024.0 * 1024.0 * 1024.0},
+  ImageSizesList{"2 GB",2,"GB",2.0 * 1024.0 * 1024.0 * 1024.0},
+  ImageSizesList{"4 GB",4,"GB",4.0 * 1024.0 * 1024.0 * 1024.0},
+  ImageSizesList{"8 GB",8,"GB",8.0 * 1024.0 * 1024.0 * 1024.0},
 };
 #ifdef USB_ON
 void fake_loading_w_luckfox(){
@@ -477,22 +486,36 @@ int action_create_image(std::any arg){
     show_message(_("Create Aborted."),1);
     return action_main_menu(NULL);
   }
-  /*
-  show_message("",2); //屏蔽输入
-  for (int i = 0; i < 5; ++i) {
-            std::cout << "Wait " << i+1 << "s\n";
-            message_draw_standalone(&u8g2,_f("Wait %ds...",i+1));
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+  #ifdef USB_ON
+  message_draw_standalone(&u8g2,_f("Creating Image..."));
+  if(!fs::exists("./make_fat32_img.sh")){
+    show_message(_("Create Failed."),1);
+    return action_main_menu(NULL);
   }
-  */
+  system(("./make_fat32_img.sh "+ image_info.path +" "+roundNumber(imageSizeList[image_info.imageIndex].usedperUnit,0) +" "+imageSizeList[image_info.imageIndex].perUnit).c_str());
+  #else
+  printf("%s\n",("./make_fat32_img.sh "+ image_info.path +" "+roundNumber(imageSizeList[image_info.imageIndex].usedperUnit,0) +" "+imageSizeList[image_info.imageIndex].perUnit).c_str());
+  message_draw_standalone(&u8g2,_f("Creating Image..."));
+  sleep(5);
+  #endif
+  #ifndef USB_ON
   show_message(_("Create Success."),1);
+  #else
+  if(!fs::exists(fs::path(image_info.path))){
+    show_message(_("Create Failed."),1);
+  }else{
+    show_message(_("Create Success."),1);
+  }
+  #endif
   return action_main_menu(NULL);
 }
 int action_disk_image(int index,std::any arg){
   auto path = std::any_cast<fs::path>(arg);
   std::cout << "user select " << imageSizeList[index].friendlyName << std::endl;
-  std::string image_size = imageSizeList[index].friendlyName;
+  std::string image_size = _f("%.0f%s",imageSizeList[index].usedperUnit,imageSizeList[index].perUnit.c_str());
   std::string name=getDiskImageFilename("./"+path.string(),image_size);
+  image_info.imageIndex=index;
+  image_info.path="./"+path.string()+"/"+name;
   Menu dir_menu { .title = "Confirm image info" };
   std::vector<MenuItem> dir_menu_items;
   dir_menu_items.push_back(
@@ -500,7 +523,7 @@ int action_disk_image(int index,std::any arg){
   dir_menu_items.push_back(
       MenuItem{.name = "No",
                     .action = action_create_image,
-                   .action_arg = true});
+                    .action_arg = true});
   dir_menu_items.push_back(
       MenuItem{.name = "Yes",
                     .action = action_create_image,
