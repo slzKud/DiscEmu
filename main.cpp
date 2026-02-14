@@ -289,7 +289,12 @@ int action_screen_rotation(std::any arg){
             AppConfig& config = configManager.getConfig();
             config.screenRotation = 0;
             if(configManager.saveConfig(config)){
-              show_message("Config Saved.",1);
+              #ifdef USB_ON
+              fake_loading_w_luckfox();
+              return -1;
+              #else
+              return action_reset(NULL);
+              #endif
             }else{
               show_message("Config not effected.",1);
             }
@@ -303,7 +308,12 @@ int action_screen_rotation(std::any arg){
             AppConfig& config = configManager.getConfig();
             config.screenRotation = 1;
             if(configManager.saveConfig(config)){
-              show_message("Config Saved.",1);
+              #ifdef USB_ON
+              fake_loading_w_luckfox();
+              return -1;
+              #else
+              return action_reset(NULL);
+              #endif
             }else{
               show_message("Config not effected.",1);
             }
