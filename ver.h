@@ -4,7 +4,11 @@
     #if defined(DEADFATTY_KEYPAD_INPUT) && defined(SCREEN_ROTATE)
         #define DEVICE_TYPE "DiscEmu(deadfatty)"
     #elif defined(SCREEN_ROTATE) && !defined(DEADFATTY_KEYPAD_INPUT)
-        #define DEVICE_TYPE "ITBoot"
+        #if SCREEN_ROTATE==1
+            #define DEVICE_TYPE "ITBoot"
+        #else
+            #define DEVICE_TYPE "DiscEmu"
+        #endif
     #elif !defined(DEADFATTY_KEYPAD_INPUT) && !defined(SCREEN_ROTATE)
         #define DEVICE_TYPE "DiscEmu"
     #else
