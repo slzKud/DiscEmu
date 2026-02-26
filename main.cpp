@@ -410,7 +410,41 @@ int action_genrnal_settings(std::any arg) {
   menu_run(&status_menu, &u8g2);
   return 0;
 }
-
+int action_format_drive(std::any arg){
+  #ifdef USB_ON
+  message_draw_standalone(&u8g2,_f("Formating Drive..."));
+  if(!fs::exists("./format_drive.sh")){
+    show_message(_("Format Failed."),1);
+    return action_main_menu(NULL);
+  }
+  system("./format_drive.sh exfat");
+  #else
+  printf("%s\n","./format_drive.sh exfat");
+  message_draw_standalone(&u8g2,_f("Formating Drive..."));
+  sleep(5);
+  #endif
+  #ifndef USB_ON
+  return action_reset(NULL);
+  #else
+  fake_loading_w_luckfox();
+  return -1;
+  #endif
+  
+}
+int action_format_confirm(std::any arg) {
+  PromptParams params;
+  params.title = "Format Drive?";
+  params.options = {"No", "Yes"};
+  params.actions = {
+        [](int index, std::any arg) { 
+            return -1;
+        },
+        [](int index, std::any arg) { 
+            return action_format_drive(NULL);
+        }
+    };
+  return action_prompt(params);
+}
 int action_storage(std::any arg) {
   DiskSpaceInfo disk_space;
   bool ret;
@@ -427,7 +461,7 @@ int action_storage(std::any arg) {
   std::vector<MenuItem> status_menu_items = {      
       MenuItem{.name = _f("Total: %sGB",roundNumber(disk_space.totalGB,2).c_str())},
       MenuItem{.name = _f("Free: %sGB",roundNumber(disk_space.freeGB,2).c_str())},
-      MenuItem{.name = _("Format Drive")}
+      MenuItem{.name = _("Format Drive"),.action = action_format_confirm}
   };
   menu_init(&status_menu, &status_menu_items);
   menu_run(&status_menu, &u8g2);
