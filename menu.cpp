@@ -33,6 +33,8 @@ bool redraw = true;
 int draw_flag = 0; 
 int bye_flag = 0;
 int menu_system_running = 1;
+int frame_stay_time = 0;
+int oled_closed_time = -1 ; // not allow to turn off oled.
 std::string message_string = "";
 char fontNameU8G2[255]="";
 void update_viewport(Menu *menu);
@@ -96,8 +98,17 @@ public:
         c=input_get();
         #endif
         if (c != InputValue::Unknown) {
+            if(oled_closed_time >0){
+              frame_stay_time = 0;
+              printf("reset frame_stay_time!!!\n");
+            }
             if(draw_flag == 1){ // 1: display str,press any key to continue.
               draw_flag = 0;
+              return;
+            }
+            if(draw_flag == 3){ // 3: turn off oled,press any key to turn on.
+              draw_flag = 0;
+              need_redraw = true;
               return;
             }
             if(draw_flag == 0){
@@ -374,6 +385,10 @@ void menu_draw(Menu *menu, u8g2_t *display)
 
 // 消息绘制函数
 void show_message(std::string string,int draw_flag_value){
+  if(string!="" && draw_flag_value != 3){
+    printf("close sleep!!!\n");
+    frame_stay_time = -1 ; // close sleep;
+  }
   message_string=string;
   draw_flag = draw_flag_value;
 }
@@ -382,6 +397,7 @@ void message_draw(u8g2_t* display){
   u8g2_DrawUTF8(display, 2, 28, _(message_string.c_str()));
 }
 void message_draw_standalone(u8g2_t* display,std::string string){
+  frame_stay_time = -1 ; // close sleep;
   FontManager::getInstance().setFont(display,I18N::getInstance().getFontName(I18N::getInstance().getCurrentLanguage()).c_str());
   u8g2_FirstPage(display);
   do {
@@ -413,6 +429,17 @@ int menu_run(Menu *menu, u8g2_t *display)
         if (frame_time < std::chrono::milliseconds(100)) { // 60fps
             std::this_thread::sleep_for(std::chrono::milliseconds(100) - frame_time);
         }
+        if(frame_stay_time>=0 && oled_closed_time>0){
+          //printf("frame_stay_time：%d!!\n",frame_stay_time);
+          frame_stay_time++;
+        }
+          
+        if(frame_stay_time>=oled_closed_time && oled_closed_time>0){
+          // TODO : Sleep
+          printf("time to close oled.\n");
+          show_message("",3);
+          frame_stay_time = -1;
+        }
     }
     printf("menu_run done\n");
     if(bye_flag!=1)
@@ -433,6 +460,9 @@ int menu_run(Menu *menu, u8g2_t *display)
     sleep(1);
     #endif
     return 0;
+}
+void set_oled_close_time(int time){
+  oled_closed_time = time;
 }
 
 void menu_off(int bye){

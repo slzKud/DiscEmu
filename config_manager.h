@@ -8,15 +8,16 @@ struct AppConfig {
     bool mscOnStart = false;
     bool readOnlyMode = false;
     bool floppySupport = false;
+    int screenOffTime = -1;
     std::string langID = "zh-cn";
     
     // 默认构造函数
     AppConfig() = default;
     
     // 带参数的构造函数
-    AppConfig(int rotation, bool msc, bool readOnly, bool floppy, const std::string& lang)
+    AppConfig(int rotation, bool msc, bool readOnly, bool floppy,int offTime, const std::string& lang)
         : screenRotation(rotation), mscOnStart(msc), 
-          readOnlyMode(readOnly), floppySupport(floppy), langID(lang) {}
+          readOnlyMode(readOnly), floppySupport(floppy),screenOffTime(offTime), langID(lang) {}
 };
 
 class ConfigManager {

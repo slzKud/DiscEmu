@@ -87,7 +87,13 @@ bool ConfigManager::parseConfig(cJSON* root, AppConfig& config) {
     if (cJSON_IsString(langItem) && (langItem->valuestring != nullptr)) {
         config.langID = langItem->valuestring;
     }
-    
+
+    // 解析 screenOffTime
+    cJSON* screenOffTimeItem = cJSON_GetObjectItem(root, "screenOffTime");
+    if (cJSON_IsNumber(screenOffTimeItem)) {
+        config.screenOffTime = screenOffTimeItem->valueint;
+    }
+
     return true;
 }
 
@@ -147,12 +153,15 @@ cJSON* ConfigManager::createJsonFromConfig(const AppConfig& config) {
     
     // 添加 langID
     cJSON_AddStringToObject(root, "langID", config.langID.c_str());
-    
+
+    // 添加 screenOffTime
+    cJSON_AddNumberToObject(root, "screenOffTime", config.screenOffTime);
+
     return root;
 }
 
 bool ConfigManager::createDefaultConfig() {
-    AppConfig defaultConfig(SCREEN_ROTATE, false, false, false, DEFAULT_LANG);
+    AppConfig defaultConfig(SCREEN_ROTATE, false, false, false,-1, DEFAULT_LANG);
     return saveConfig(defaultConfig);
 }
 

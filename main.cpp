@@ -374,6 +374,103 @@ int action_screen_rotation(std::any arg){
     };
   return action_prompt(params);
 }
+
+int action_screen_timeout(std::any arg){
+  PromptParams params;
+  AppConfig& config = configManager.getConfig();
+  params.title = "Screen Timeout";
+  params.need_back = 1;
+  if(config.screenOffTime == -1 )
+    params.active_index = 0;
+  if(config.screenOffTime == 300 )
+    params.active_index = 1;
+    if(config.screenOffTime == 600 )
+    params.active_index = 2;
+    if(config.screenOffTime == 3000 )
+    params.active_index = 3;
+    if(config.screenOffTime == 6000 )
+    params.active_index = 4;
+  params.options = {"Never", "30 seconds","1 Minute","5 Minutes","10 Minutes"};
+  params.actions = {
+        [](int index, std::any arg) { 
+            std::cout << "Screen Timeout -1" << std::endl;
+            AppConfig& config = configManager.getConfig();
+            config.screenOffTime = -1;
+            set_oled_close_time(config.screenOffTime);
+            if(configManager.saveConfig(config)){
+              show_message("Config Saved.",1);
+            }else{
+              show_message("Config not effected.",1);
+            }
+            #ifdef I2C_DISPLAY
+            system("sync");
+            #endif
+            return -1;
+        },
+        [](int index, std::any arg) { 
+            std::cout << "Screen Timeout 300" << std::endl;
+            AppConfig& config = configManager.getConfig();
+            config.screenOffTime = 300;
+            set_oled_close_time(config.screenOffTime);
+            if(configManager.saveConfig(config)){
+              show_message("Config Saved.",1);
+            }else{
+              show_message("Config not effected.",1);
+            }
+            #ifdef I2C_DISPLAY
+            system("sync");
+            #endif
+            return -1;
+        },
+        [](int index, std::any arg) { 
+            std::cout << "Screen Timeout 600" << std::endl;
+            AppConfig& config = configManager.getConfig();
+            config.screenOffTime = 600;
+            set_oled_close_time(config.screenOffTime);
+            if(configManager.saveConfig(config)){
+              show_message("Config Saved.",1);
+            }else{
+              show_message("Config not effected.",1);
+            }
+            #ifdef I2C_DISPLAY
+            system("sync");
+            #endif
+            return -1;
+        },
+        [](int index, std::any arg) { 
+            std::cout << "Screen Timeout 3000" << std::endl;
+            AppConfig& config = configManager.getConfig();
+            config.screenOffTime = 3000;
+            set_oled_close_time(config.screenOffTime);
+            if(configManager.saveConfig(config)){
+              show_message("Config Saved.",1);
+            }else{
+              show_message("Config not effected.",1);
+            }
+            #ifdef I2C_DISPLAY
+            system("sync");
+            #endif
+            return -1;
+        },
+        [](int index, std::any arg) { 
+            std::cout << "Screen Timeout 6000" << std::endl;
+            AppConfig& config = configManager.getConfig();
+            config.screenOffTime = 6000;
+            set_oled_close_time(config.screenOffTime);
+            if(configManager.saveConfig(config)){
+              show_message("Config Saved.",1);
+            }else{
+              show_message("Config not effected.",1);
+            }
+            #ifdef I2C_DISPLAY
+            system("sync");
+            #endif
+            return -1;
+        }
+    };
+  return action_prompt(params);
+}
+
 int action_reset_config(std::any arg){
   PromptParams params;
   AppConfig& config = configManager.getConfig();
@@ -401,6 +498,7 @@ int action_genrnal_settings(std::any arg) {
   std::vector<MenuItem> status_menu_items = { 
       MenuItem{.name = "Back"},   
       MenuItem{.name = _("Screen Rotation"),.action = action_screen_rotation},  
+      MenuItem{.name = _("Screen Timeout"),.action = action_screen_timeout}, 
       MenuItem{.name = _("Startup Empty-CD"),.action = action_empty_cd},  
       MenuItem{.name = _("Read-only Settings"),.action = action_read_only_set},
       MenuItem{.name = _("Floppy Mode"),.action = action_floppy_mode},
@@ -890,8 +988,10 @@ int main(void) {
   FontManager::getInstance().initializeFontMap();
   I18N::getInstance().setLanguage(config.langID.c_str());
   std::cout << "current lang:" << I18N::getInstance().getCurrentLanguage() << std::endl;
+  set_oled_close_time(config.screenOffTime);
+  std::cout << "current oled close time:" << config.screenOffTime << std::endl;
   #ifndef I2C_DISPLAY
-  std::cout << "Press [w] to up, [d] to down,[f] to select,[g] to select sub menu." << std::endl;
+  std::cout << "Press [w] to up, [s] to down,[f] to select,[g] to select sub menu." << std::endl;
   if(config.screenRotation==0){
 	  u8g2_SetupBuffer_SDL_128x64_4(&u8g2, &u8g2_cb_r0);
   }else{

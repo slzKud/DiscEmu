@@ -40,6 +40,7 @@ typedef struct {
     int active_x;
     int scroll_counter;
 } Menu;
+void set_oled_close_time(int time);
 void menu_clear_off_on(bool clear);
 void menu_init(Menu* menu, std::vector<MenuItem>* items);
 void menu_draw(Menu* menu, u8g2_t* display);
