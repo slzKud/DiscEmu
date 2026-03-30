@@ -58,40 +58,53 @@ bool ConfigManager::loadConfig(AppConfig& config) {
 }
 
 bool ConfigManager::parseConfig(cJSON* root, AppConfig& config) {
+    AppConfig defaultConfig(SCREEN_ROTATE, false, false, false,-1, DEFAULT_LANG);
     // 解析 screenRotation
     cJSON* rotationItem = cJSON_GetObjectItem(root, "screenRotation");
     if (cJSON_IsNumber(rotationItem)) {
         config.screenRotation = rotationItem->valueint;
+    }else{
+        config.screenRotation=defaultConfig.screenRotation;
     }
     
     // 解析 mscOnStart
     cJSON* mscItem = cJSON_GetObjectItem(root, "mscOnStart");
     if (cJSON_IsBool(mscItem)) {
         config.mscOnStart = cJSON_IsTrue(mscItem);
+    }else{
+        config.mscOnStart=defaultConfig.mscOnStart;
     }
     
     // 解析 readOnlyMode
     cJSON* readOnlyItem = cJSON_GetObjectItem(root, "readOnlyMode");
     if (cJSON_IsBool(readOnlyItem)) {
         config.readOnlyMode = cJSON_IsTrue(readOnlyItem);
+    }else{
+        config.readOnlyMode=defaultConfig.readOnlyMode;
     }
     
     // 解析 floppySupport
     cJSON* floppyItem = cJSON_GetObjectItem(root, "floppySupport");
     if (cJSON_IsBool(floppyItem)) {
         config.floppySupport = cJSON_IsTrue(floppyItem);
+    }else{
+        config.floppySupport=defaultConfig.floppySupport;
     }
     
     // 解析 langID
     cJSON* langItem = cJSON_GetObjectItem(root, "langID");
     if (cJSON_IsString(langItem) && (langItem->valuestring != nullptr)) {
         config.langID = langItem->valuestring;
+    }else{
+        config.langID=defaultConfig.langID;
     }
 
     // 解析 screenOffTime
     cJSON* screenOffTimeItem = cJSON_GetObjectItem(root, "screenOffTime");
     if (cJSON_IsNumber(screenOffTimeItem)) {
         config.screenOffTime = screenOffTimeItem->valueint;
+    }else{
+        config.screenOffTime=defaultConfig.screenOffTime;
     }
 
     return true;
@@ -162,6 +175,11 @@ cJSON* ConfigManager::createJsonFromConfig(const AppConfig& config) {
 
 bool ConfigManager::createDefaultConfig() {
     AppConfig defaultConfig(SCREEN_ROTATE, false, false, false,-1, DEFAULT_LANG);
+    std::ifstream file("/etc/normal_msc.flag");
+    #ifdef USB_ON
+    if(file.good())
+        defaultConfig.mscOnStart=true;
+    #endif
     return saveConfig(defaultConfig);
 }
 
