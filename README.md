@@ -1,4 +1,7 @@
 # DiscEmu
+
+[Image SDK](https://github.com/slzKud/DiscEmu_Build_SDK) | [简体中文](README_ZH.md)
+
 CD-ROM Emulator Device Software based on [driver1998's](https://github.com/driver1998/DiscEmu).This project has undergone a certain amount of refactoring and code modification compared to the original project.
 
 Currently under continuous development.
@@ -17,6 +20,9 @@ Currently under continuous development.
 * USB Floppy simulation.
 * Original DiscEmu with SPI OLED and Encoder Support.(Use Milk-V Duo)
 * Microcontroller support (e.g., CH32)
+## Hardware Info
+
+see [Details](hardware_luckfox.md).
 
 ## Build 
 
