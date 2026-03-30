@@ -175,8 +175,8 @@ cJSON* ConfigManager::createJsonFromConfig(const AppConfig& config) {
 
 bool ConfigManager::createDefaultConfig() {
     AppConfig defaultConfig(SCREEN_ROTATE, false, false, false,-1, DEFAULT_LANG);
-    std::ifstream file("/etc/normal_msc.flag");
     #ifdef USB_ON
+    std::ifstream file("/etc/normal_msc.flag");
     if(file.good())
         defaultConfig.mscOnStart=true;
     #endif
